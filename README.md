@@ -69,6 +69,12 @@ Em um Linux sem interface gráfica, use `xvfb-run -a python3 -m pytest -v` (sem 
 
 ## 🧩 Diagrama de classes (UML)
 
+### Visão geral das relações
+
+![Diagrama UML simplificado](docs/uml_simples.png)
+
+### Diagrama completo (atributos e métodos)
+
 ![Diagrama de classes UML](docs/uml.png)
 
 O fonte do diagrama está em [`docs/uml.mmd`](docs/uml.mmd) (Mermaid). Versão renderizada pelo GitHub:
@@ -297,7 +303,9 @@ sistema-biblioteca/
 │   └── test_interface.py
 ├── docs/
 │   ├── uml.mmd             # diagrama de classes em Mermaid
-│   └── uml.png             # diagrama renderizado
+│   ├── uml.png             # diagrama completo renderizado
+│   ├── uml_simples.mmd     # diagrama simplificado (apresentação)
+│   └── uml_simples.png
 ├── README.md
 ├── ROTEIRO_VIDEO.md
 └── requirements.txt

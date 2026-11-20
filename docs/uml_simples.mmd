@@ -1,0 +1,37 @@
+classDiagram
+    direction TB
+    class Biblioteca
+    class ItemAcervo {
+        <<abstract>>
+    }
+    class Membro {
+        <<abstract>>
+    }
+    class Exportador {
+        <<abstract>>
+    }
+
+    %% HERANÇA + POLIMORFISMO
+    ItemAcervo <|-- Livro : herança
+    ItemAcervo <|-- Revista : herança
+    ItemAcervo <|-- DVD : herança
+    Membro <|-- Aluno : herança
+    Membro <|-- Professor : herança
+    Exportador <|-- ExportadorTexto : herança
+    Exportador <|-- ExportadorCSV : herança
+
+    %% COMPOSIÇÃO
+    Membro *-- Carteirinha : composição
+    Biblioteca *-- Emprestimo : composição
+
+    %% AGREGAÇÃO
+    Biblioteca o-- ItemAcervo : agregação
+    Biblioteca o-- Membro : agregação
+
+    %% ASSOCIAÇÃO
+    Emprestimo --> ItemAcervo : associação
+    Emprestimo --> Membro : associação
+
+    %% DEPENDÊNCIA
+    Emprestimo ..> CalculadoraMulta : dependência
+    Biblioteca ..> Exportador : dependência
