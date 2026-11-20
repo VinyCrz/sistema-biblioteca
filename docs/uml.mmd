@@ -1,0 +1,163 @@
+classDiagram
+    direction TB
+
+    %% ===================== ITENS (HERANÇA + POLIMORFISMO)
+    class ItemAcervo {
+        <<abstract>>
+        -str _codigo
+        -str _titulo
+        -int _ano
+        -bool _disponivel
+        +codigo() str
+        +titulo() str
+        +ano() int
+        +disponivel() bool
+        +marcar_emprestado() void
+        +marcar_devolvido() void
+        +prazo_dias()* int
+        +multa_diaria()* float
+        +tipo()* str
+        +descricao() str
+    }
+    class Livro {
+        +str autor
+        +str isbn
+        +prazo_dias() int
+        +multa_diaria() float
+        +tipo() str
+        +descricao() str
+    }
+    class Revista {
+        +int edicao
+        +prazo_dias() int
+        +multa_diaria() float
+        +tipo() str
+        +descricao() str
+    }
+    class DVD {
+        +int duracao_min
+        +prazo_dias() int
+        +multa_diaria() float
+        +tipo() str
+        +descricao() str
+    }
+
+    %% ===================== PESSOAS (HERANÇA + COMPOSIÇÃO)
+    class Pessoa {
+        <<abstract>>
+        -str _nome
+        -str _cpf
+        +nome() str
+        +cpf() str
+        +tipo()* str
+    }
+    class Membro {
+        <<abstract>>
+        -str _matricula
+        -Carteirinha _carteirinha
+        +matricula() str
+        +carteirinha() Carteirinha
+        +limite_emprestimos()* int
+        +desconto_multa() float
+    }
+    class Aluno {
+        +str curso
+        +tipo() str
+        +limite_emprestimos() int
+    }
+    class Professor {
+        +str departamento
+        +tipo() str
+        +limite_emprestimos() int
+        +desconto_multa() float
+    }
+    class Carteirinha {
+        +str numero
+        +Membro titular
+        +date emissao
+        +date validade
+        +valida_em(dia) bool
+    }
+
+    %% ===================== EMPRÉSTIMO E MULTA
+    class Emprestimo {
+        -Membro _membro
+        -ItemAcervo _item
+        -date _data_emprestimo
+        -date _data_prevista
+        -date _data_devolucao
+        -float _multa
+        +ativo() bool
+        +atrasado_em(dia) bool
+        +devolver(data) float
+    }
+    class CalculadoraMulta {
+        +dias_atraso(prevista, devolucao)$ int
+        +calcular(item, membro, prevista, devolucao)$ float
+    }
+
+    %% ===================== BIBLIOTECA E RELATÓRIOS
+    class Biblioteca {
+        +str nome
+        -dict _itens
+        -dict _membros
+        -list _emprestimos
+        +itens() list
+        +membros() list
+        +emprestimos() list
+        +buscar_item(codigo) ItemAcervo
+        +buscar_membro(matricula) Membro
+        +pesquisar(texto) list
+        +itens_disponiveis() list
+        +emprestimos_ativos() list
+        +emprestimos_do_membro(matricula) list
+        +atrasados(hoje) list
+        +total_multas() float
+        +cadastrar_item(item) void
+        +cadastrar_membro(membro) void
+        +remover_item(codigo) ItemAcervo
+        +remover_membro(matricula) Membro
+        +emprestar(codigo, matricula, data) Emprestimo
+        +devolver(codigo, data) float
+        +gerar_relatorio(exportador) str
+    }
+    class Exportador {
+        <<abstract>>
+        +exportar(biblioteca)* str
+        +extensao()* str
+    }
+    class ExportadorTexto {
+        +exportar(biblioteca) str
+        +extensao() str
+    }
+    class ExportadorCSV {
+        +exportar(biblioteca) str
+        +extensao() str
+    }
+
+    %% ===================== RELAÇÕES
+    %% Herança
+    ItemAcervo <|-- Livro
+    ItemAcervo <|-- Revista
+    ItemAcervo <|-- DVD
+    Pessoa <|-- Membro
+    Membro <|-- Aluno
+    Membro <|-- Professor
+    Exportador <|-- ExportadorTexto
+    Exportador <|-- ExportadorCSV
+
+    %% Composição
+    Membro "1" *-- "1" Carteirinha : possui
+    Biblioteca "1" *-- "0..*" Emprestimo : registra
+
+    %% Agregação
+    Biblioteca "1" o-- "0..*" ItemAcervo : acervo
+    Biblioteca "1" o-- "0..*" Membro : membros
+
+    %% Associação
+    Emprestimo "0..*" --> "1" Membro : membro
+    Emprestimo "0..*" --> "1" ItemAcervo : item
+
+    %% Dependência
+    Emprestimo ..> CalculadoraMulta : usa
+    Biblioteca ..> Exportador : usa
