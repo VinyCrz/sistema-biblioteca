@@ -69,7 +69,9 @@ Em um Linux sem interface gráfica, use `xvfb-run -a python3 -m pytest -v` (sem 
 
 ## 🧩 Diagrama de classes (UML)
 
-O fonte do diagrama está em [`docs/uml.mmd`](docs/uml.mmd) (Mermaid). O GitHub renderiza o diagrama abaixo automaticamente:
+![Diagrama de classes UML](docs/uml.png)
+
+O fonte do diagrama está em [`docs/uml.mmd`](docs/uml.mmd) (Mermaid). Versão renderizada pelo GitHub:
 
 ```mermaid
 classDiagram
@@ -237,8 +239,8 @@ classDiagram
     Biblioteca ..> Exportador : usa
 ```
 
-> Para gerar a imagem `docs/uml.png`:
-> `npx -y @mermaid-js/mermaid-cli -i docs/uml.mmd -o docs/uml.png -b white --width 2200`
+> Para regerar a imagem `docs/uml.png`:
+> `npx -y @mermaid-js/mermaid-cli -i docs/uml.mmd -o docs/uml.png -b white -s 2`
 
 ## 🔗 Relações entre classes
 
@@ -294,7 +296,8 @@ sistema-biblioteca/
 │   ├── test_funcionalidades.py
 │   └── test_interface.py
 ├── docs/
-│   └── uml.mmd             # diagrama de classes em Mermaid
+│   ├── uml.mmd             # diagrama de classes em Mermaid
+│   └── uml.png             # diagrama renderizado
 ├── README.md
 ├── ROTEIRO_VIDEO.md
 └── requirements.txt
