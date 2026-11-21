@@ -17,6 +17,9 @@ classDiagram
         +prazo_dias()* int
         +multa_diaria()* float
         +tipo()* str
+        +rotulo_extra()* str
+        +valor_extra()*
+        +alterar(titulo, ano, extra) void
         +descricao() str
     }
     class Livro {
@@ -50,6 +53,7 @@ classDiagram
         +nome() str
         +cpf() str
         +tipo()* str
+        +alterar_dados(nome, cpf) void
     }
     class Membro {
         <<abstract>>
@@ -59,6 +63,9 @@ classDiagram
         +carteirinha() Carteirinha
         +limite_emprestimos()* int
         +desconto_multa() float
+        +rotulo_extra()* str
+        +valor_extra()*
+        +alterar(nome, cpf, extra) void
     }
     class Aluno {
         +str curso
@@ -77,6 +84,7 @@ classDiagram
         +date emissao
         +date validade
         +valida_em(dia) bool
+        +renovar(emissao) date
     }
 
     %% ===================== EMPRÉSTIMO E MULTA
@@ -109,12 +117,18 @@ classDiagram
         +buscar_membro(matricula) Membro
         +pesquisar(texto) list
         +itens_disponiveis() list
+        +itens_emprestados() list
+        +historico_do_membro(matricula) list
+        +resumo(hoje) dict
         +emprestimos_ativos() list
         +emprestimos_do_membro(matricula) list
         +atrasados(hoje) list
         +total_multas() float
         +cadastrar_item(item) void
         +cadastrar_membro(membro) void
+        +editar_item(codigo, titulo, ano, extra) ItemAcervo
+        +editar_membro(matricula, nome, cpf, extra) Membro
+        +renovar_carteirinha(matricula, emissao) Carteirinha
         +remover_item(codigo) ItemAcervo
         +remover_membro(matricula) Membro
         +emprestar(codigo, matricula, data) Emprestimo

@@ -60,11 +60,19 @@ class Biblioteca:
     def itens_disponiveis(self):
         return [i for i in self._itens.values() if i.disponivel]
 
+    def itens_emprestados(self):
+        return [i for i in self._itens.values() if not i.disponivel]
+
     def emprestimos_ativos(self):
         return [e for e in self._emprestimos if e.ativo]
 
     def emprestimos_do_membro(self, matricula):
         return [e for e in self.emprestimos_ativos() if e.membro.matricula == matricula]
+
+    def historico_do_membro(self, matricula):
+        """Todos os empréstimos (ativos e devolvidos) de um membro."""
+        self.buscar_membro(matricula)
+        return [e for e in self._emprestimos if e.membro.matricula == matricula]
 
     def atrasados(self, hoje=None):
         hoje = hoje or date.today()
@@ -72,6 +80,18 @@ class Biblioteca:
 
     def total_multas(self):
         return round(sum(e.multa for e in self._emprestimos), 2)
+
+    def resumo(self, hoje=None):
+        """Números gerais da biblioteca (usado na barra de status e no menu)."""
+        return {
+            "itens": len(self._itens),
+            "disponiveis": len(self.itens_disponiveis()),
+            "membros": len(self._membros),
+            "ativos": len(self.emprestimos_ativos()),
+            "atrasados": len(self.atrasados(hoje)),
+            "emprestimos": len(self._emprestimos),
+            "multas": self.total_multas(),
+        }
 
     # ---------- cadastros ----------
     def cadastrar_item(self, item):
@@ -85,6 +105,21 @@ class Biblioteca:
                 f"Já existe um membro com a matrícula '{membro.matricula}'."
             )
         self._membros[membro.matricula] = membro
+
+    def editar_item(self, codigo, titulo, ano, extra):
+        item = self.buscar_item(codigo)
+        item.alterar(titulo, ano, extra)  # POLIMORFISMO: cada tipo valida seu extra
+        return item
+
+    def editar_membro(self, matricula, nome, cpf, extra):
+        membro = self.buscar_membro(matricula)
+        membro.alterar(nome, cpf, extra)
+        return membro
+
+    def renovar_carteirinha(self, matricula, emissao=None):
+        membro = self.buscar_membro(matricula)
+        membro.carteirinha.renovar(emissao)
+        return membro.carteirinha
 
     def remover_item(self, codigo):
         item = self.buscar_item(codigo)

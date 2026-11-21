@@ -13,14 +13,26 @@ class Pessoa(ABC):
     """Classe abstrata com os dados comuns a qualquer pessoa."""
 
     def __init__(self, nome, cpf):
+        self._nome = self._validar_nome(nome)
+        self._cpf = self._validar_cpf(cpf)  # guarda só os números
+
+    @staticmethod
+    def _validar_nome(nome):
         nome = str(nome).strip()
         if not nome:
             raise ValueError("O nome é obrigatório.")
+        return nome
+
+    @staticmethod
+    def _validar_cpf(cpf):
         digitos = "".join(c for c in str(cpf) if c.isdigit())
         if len(digitos) != 11:
             raise ValueError("O CPF deve ter 11 dígitos.")
-        self._nome = nome
-        self._cpf = digitos  # guarda só os números
+        return digitos
+
+    def alterar_dados(self, nome, cpf):
+        nome, cpf = self._validar_nome(nome), self._validar_cpf(cpf)
+        self._nome, self._cpf = nome, cpf
 
     @property
     def nome(self):
@@ -44,8 +56,13 @@ class Carteirinha:
         self.numero = f"CART-{Carteirinha._proximo_numero:04d}"
         Carteirinha._proximo_numero += 1
         self.titular = titular
+        self.renovar(emissao)
+
+    def renovar(self, emissao=None):
+        """Reemite a carteirinha: nova validade de 365 dias (o número não muda)."""
         self.emissao = emissao or date.today()
         self.validade = self.emissao + timedelta(days=365)
+        return self.validade
 
     def valida_em(self, dia) -> bool:
         # Só verifica o vencimento (permite registrar empréstimos retroativos)
@@ -84,6 +101,24 @@ class Membro(Pessoa, ABC):
         """Percentual de desconto na multa (0.0 a 1.0). Padrão: sem desconto."""
         return 0.0
 
+    # POLIMORFISMO: Aluno tem "Curso", Professor tem "Departamento"
+    @abstractmethod
+    def rotulo_extra(self) -> str:
+        """Nome do campo extra do tipo de membro."""
+
+    @abstractmethod
+    def valor_extra(self):
+        """Valor atual do campo extra."""
+
+    @abstractmethod
+    def _definir_extra(self, valor):
+        """Grava o campo extra."""
+
+    def alterar(self, nome, cpf, extra):
+        """Altera os dados do membro (matrícula e carteirinha não mudam)."""
+        self.alterar_dados(nome, cpf)
+        self._definir_extra(str(extra).strip())
+
     def __str__(self):
         return f"{self.tipo()}: {self._nome} ({self._matricula})"
 
@@ -98,6 +133,15 @@ class Aluno(Membro):
     def tipo(self) -> str:
         return "Aluno"
 
+    def rotulo_extra(self) -> str:
+        return "Curso"
+
+    def valor_extra(self):
+        return self.curso
+
+    def _definir_extra(self, valor):
+        self.curso = valor
+
     def limite_emprestimos(self) -> int:
         return 3
 
@@ -111,6 +155,15 @@ class Professor(Membro):
 
     def tipo(self) -> str:
         return "Professor"
+
+    def rotulo_extra(self) -> str:
+        return "Departamento"
+
+    def valor_extra(self):
+        return self.departamento
+
+    def _definir_extra(self, valor):
+        self.departamento = valor
 
     def limite_emprestimos(self) -> int:
         return 10
