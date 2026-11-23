@@ -1,4 +1,4 @@
-# 🎬 Roteiro do vídeo (máx. 3:00)
+# 🎬 Roteiro do vídeo — Desk App I (máx. 3:00)
 
 | Tempo | O que mostrar | O que falar |
 |---|---|---|

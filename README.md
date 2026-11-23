@@ -1,10 +1,33 @@
 # 📚 Sistema de Biblioteca
 
-Projeto acadêmico de **Programação Orientada a Objetos** da disciplina **Desk App I**.
+Projeto acadêmico de **Programação Orientada a Objetos** das disciplinas **Desk App I** e **Desk App II**.
 
 **Autor:** Vinicius
 
 Aplicação desktop em **Python 3.10+ com Tkinter** para gerenciar o acervo (livros, revistas e DVDs), os membros (alunos e professores), empréstimos, devoluções com multa e relatórios. O projeto demonstra **Herança, Polimorfismo, Composição, Agregação, Associação e Dependência**, todas cobertas por testes automatizados.
+
+## 🆕 Desk App II — menu completo
+
+Nesta etapa o sistema ganhou uma **barra de menu totalmente funcional**, que dá acesso a **todos os modelos** (Livro, Revista, DVD, Aluno, Professor, Carteirinha, Empréstimo e Exportadores) e a **todas as funcionalidades**. Os dados ainda ficam **apenas em memória** (o banco de dados entra na próxima etapa) — a barra de status lembra isso o tempo todo.
+
+| Menu | Itens |
+|---|---|
+| **Arquivo** | Nova biblioteca (vazia) · Carregar dados de exemplo · Sair (`Ctrl+Q`) |
+| **Cadastros ▸ Acervo** | Novo Livro (`Ctrl+L`) · Nova Revista · Novo DVD · Editar item · Remover item |
+| **Cadastros ▸ Membros** | Novo Aluno (`Ctrl+M`) · Novo Professor · Editar membro · Remover membro · Renovar carteirinha |
+| **Movimentação** | Emprestar item (`Ctrl+E`) · Devolver item (`Ctrl+D`) |
+| **Consultas** | Acervo completo · Itens disponíveis · Itens emprestados · Pesquisar no acervo (`Ctrl+F`) · Membros · Carteirinhas · Empréstimos ativos · Atrasados · Histórico · Empréstimos de um membro |
+| **Relatórios** | Relatório em Texto (`Ctrl+R`) · Relatório em CSV · Salvar relatório (`Ctrl+S`) · Resumo geral |
+| **Exibir** | Ir para as abas Acervo, Membros, Empréstimos e Relatório (`Ctrl+1` a `Ctrl+4`) |
+| **Ajuda** | Regras de negócio (`F1`) · Atalhos de teclado · Sobre |
+
+O que mudou no código:
+
+- **`dialogos.py`** (novo): `FormularioDialog` (formulário genérico usado em cadastro, edição, remoção, empréstimo, devolução, renovação e pesquisa), `JanelaLista` (consultas) e `JanelaTexto` (ajuda/resumo). Nos formulários, **Enter** confirma e **Esc** fecha; se der erro de regra de negócio, a janela continua aberta para corrigir.
+- **Edição** de itens e membros (`Biblioteca.editar_item` / `editar_membro`). O formulário de edição usa **polimorfismo**: `rotulo_extra()` e `valor_extra()` fazem o campo virar *Autor*, *Edição*, *Duração*, *Curso* ou *Departamento* conforme o objeto. Código, matrícula e carteirinha não mudam.
+- **Renovação de carteirinha** (`Carteirinha.renovar` / `Biblioteca.renovar_carteirinha`): mesma carteirinha (composição), nova validade de 365 dias.
+- Novas consultas: `itens_emprestados()`, `historico_do_membro()` e `resumo()` (usado na barra de status).
+- Abas ganharam botão **Editar selecionado** e duplo clique na tabela abre a edição. Os diálogos do menu já vêm com o item/membro selecionado na aba.
 
 ## ▶️ Como executar
 
@@ -27,7 +50,7 @@ python3 -m pytest -v
 
 Em um Linux sem interface gráfica, use `xvfb-run -a python3 -m pytest -v` (sem display, os testes da interface são pulados automaticamente).
 
-**Resultado atual: 79 testes, 100% passando.**
+**Resultado atual: 113 testes, 100% passando.**
 
 | Arquivo de teste | O que verifica |
 |---|---|
@@ -35,6 +58,8 @@ Em um Linux sem interface gráfica, use `xvfb-run -a python3 -m pytest -v` (sem 
 | `test_relacoes.py` | Uma seção para cada relação: composição, agregação, associação e dependência (com `unittest.mock.patch`) |
 | `test_funcionalidades.py` | Cadastros, buscas, remoções, pesquisa, empréstimos, limites, devoluções, multas, atrasados, carteirinha vencida, relatórios |
 | `test_interface.py` | A tela Tkinter: cadastros, erros, pesquisa, empréstimo/devolução com multa, filtro de atrasados, data inválida, relatórios |
+| `test_edicao.py` | (Desk App II) Edição de cada tipo de item e membro, validações sem alterar o objeto, renovação de carteirinha, histórico, resumo |
+| `test_menu.py` | (Desk App II) Aciona **todas** as entradas do menu e verifica que nenhuma quebra; cadastro/edição/remoção/empréstimo/devolução/consultas/relatórios pelos diálogos |
 
 ## ✅ Funcionalidades
 
@@ -48,6 +73,7 @@ Em um Linux sem interface gráfica, use `xvfb-run -a python3 -m pytest -v` (sem 
 | Empréstimos | Emprestar e devolver informando a data (vazio = hoje) |
 | Empréstimos | Cálculo de multa na devolução e filtro "Mostrar só atrasados" |
 | Relatório | Gerar relatório em Texto ou CSV e salvar em arquivo |
+| Menu (Desk App II) | Tudo acima pelo menu, mais: editar item/membro, renovar carteirinha, consultas filtradas, histórico por membro, resumo geral, ajuda |
 
 ## 📏 Regras de negócio
 
@@ -99,6 +125,9 @@ classDiagram
         +prazo_dias()* int
         +multa_diaria()* float
         +tipo()* str
+        +rotulo_extra()* str
+        +valor_extra()*
+        +alterar(titulo, ano, extra) void
         +descricao() str
     }
     class Livro {
@@ -132,6 +161,7 @@ classDiagram
         +nome() str
         +cpf() str
         +tipo()* str
+        +alterar_dados(nome, cpf) void
     }
     class Membro {
         <<abstract>>
@@ -141,6 +171,9 @@ classDiagram
         +carteirinha() Carteirinha
         +limite_emprestimos()* int
         +desconto_multa() float
+        +rotulo_extra()* str
+        +valor_extra()*
+        +alterar(nome, cpf, extra) void
     }
     class Aluno {
         +str curso
@@ -159,6 +192,7 @@ classDiagram
         +date emissao
         +date validade
         +valida_em(dia) bool
+        +renovar(emissao) date
     }
 
     %% ===================== EMPRÉSTIMO E MULTA
@@ -191,12 +225,18 @@ classDiagram
         +buscar_membro(matricula) Membro
         +pesquisar(texto) list
         +itens_disponiveis() list
+        +itens_emprestados() list
+        +historico_do_membro(matricula) list
+        +resumo(hoje) dict
         +emprestimos_ativos() list
         +emprestimos_do_membro(matricula) list
         +atrasados(hoje) list
         +total_multas() float
         +cadastrar_item(item) void
         +cadastrar_membro(membro) void
+        +editar_item(codigo, titulo, ano, extra) ItemAcervo
+        +editar_membro(matricula, nome, cpf, extra) Membro
+        +renovar_carteirinha(matricula, emissao) Carteirinha
         +remover_item(codigo) ItemAcervo
         +remover_membro(matricula) Membro
         +emprestar(codigo, matricula, data) Emprestimo
@@ -285,7 +325,8 @@ classDiagram
 
 ```
 sistema-biblioteca/
-├── app.py                  # interface gráfica Tkinter (ponto de entrada)
+├── app.py                  # interface gráfica Tkinter com barra de menu (ponto de entrada)
+├── dialogos.py             # janelas do menu: formulário, lista e texto
 ├── biblioteca/
 │   ├── __init__.py         # exporta todas as classes
 │   ├── excecoes.py         # BibliotecaError e exceções filhas
@@ -300,13 +341,16 @@ sistema-biblioteca/
 │   ├── test_heranca_polimorfismo.py
 │   ├── test_relacoes.py
 │   ├── test_funcionalidades.py
-│   └── test_interface.py
+│   ├── test_interface.py
+│   ├── test_edicao.py
+│   └── test_menu.py
 ├── docs/
 │   ├── uml.mmd             # diagrama de classes em Mermaid
 │   ├── uml.png             # diagrama completo renderizado
 │   ├── uml_simples.mmd     # diagrama simplificado (apresentação)
 │   └── uml_simples.png
 ├── README.md
-├── ROTEIRO_VIDEO.md
+├── ROTEIRO_VIDEO.md        # roteiro do vídeo do Desk App I (3 min)
+├── ROTEIRO_VIDEO_II.md     # roteiro do vídeo do Desk App II (6 min)
 └── requirements.txt
 ```
