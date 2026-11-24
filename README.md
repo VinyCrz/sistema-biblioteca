@@ -417,8 +417,5 @@ sistema-biblioteca/
 │   ├── uml_simples.mmd     # diagrama simplificado (apresentação)
 │   └── uml_simples.png
 ├── README.md
-├── ROTEIRO_VIDEO.md        # roteiro do vídeo do Desk App I (3 min)
-├── ROTEIRO_VIDEO_II.md     # roteiro do vídeo do Desk App II (6 min)
-├── ROTEIRO_VIDEO_III.md    # roteiro do vídeo do Desk App III (6 min)
 └── requirements.txt
 ```
