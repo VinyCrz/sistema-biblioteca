@@ -1,18 +1,37 @@
 # 📚 Sistema de Biblioteca
 
-Projeto acadêmico de **Programação Orientada a Objetos** das disciplinas **Desk App I** e **Desk App II**.
+Projeto acadêmico de **Programação Orientada a Objetos** das disciplinas **Desk App I**, **Desk App II** e **Desk App III**.
 
 **Autor:** Vinicius
 
-Aplicação desktop em **Python 3.10+ com Tkinter** para gerenciar o acervo (livros, revistas e DVDs), os membros (alunos e professores), empréstimos, devoluções com multa e relatórios. O projeto demonstra **Herança, Polimorfismo, Composição, Agregação, Associação e Dependência**, todas cobertas por testes automatizados.
+Aplicação desktop em **Python 3.10+ com Tkinter e banco de dados SQLite** para gerenciar o acervo (livros, revistas e DVDs), os membros (alunos e professores), empréstimos, devoluções com multa e relatórios. O projeto demonstra **Herança, Polimorfismo, Composição, Agregação, Associação e Dependência**, todas cobertas por testes automatizados.
 
-## 🆕 Desk App II — menu completo
+## 🆕 Desk App III — banco de dados
 
-Nesta etapa o sistema ganhou uma **barra de menu totalmente funcional**, que dá acesso a **todos os modelos** (Livro, Revista, DVD, Aluno, Professor, Carteirinha, Empréstimo e Exportadores) e a **todas as funcionalidades**. Os dados ainda ficam **apenas em memória** (o banco de dados entra na próxima etapa) — a barra de status lembra isso o tempo todo.
+Nesta etapa os dados passaram a ser gravados num **banco de dados SQLite** (arquivo `biblioteca.db`, criado na pasta do projeto). O SQLite já vem com o Python, então **não é preciso instalar nada**. Cada cadastro, edição, remoção, renovação, empréstimo e devolução é gravado **na hora**; ao fechar e abrir o programa, tudo volta como estava.
+
+| Tabela | O que guarda |
+|---|---|
+| `itens` | Livro, Revista e DVD numa tabela só (coluna `tipo`), cada um com sua coluna extra (`autor`/`isbn`, `edicao`, `duracao_min`) |
+| `membros` | Aluno e Professor (coluna `tipo`, com `curso` ou `departamento`) e os dados da carteirinha (número, emissão, validade) |
+| `emprestimos` | Item, membro, datas, devolução e multa — com **chaves estrangeiras** para `itens` e `membros` |
+
+Como funciona no código:
+
+- **`biblioteca/repositorio.py`** — `RepositorioSQLite`: a única classe que conhece SQL. Cria as tabelas, faz `INSERT`/`UPDATE` (upsert) e lê tudo de volta como objetos (`Livro`, `Aluno`, `Emprestimo`…).
+- **`biblioteca/persistente.py`** — `BibliotecaPersistente` **herda** de `Biblioteca`: cada método chama o da classe-mãe com `super()` (onde estão as regras de negócio) e, se deu certo, grava no banco. Se a regra falhar, nada é gravado.
+- **Remoção sem perder histórico:** item e membro removidos ficam com `ativo = 0`, assim os empréstimos antigos e as multas continuam no banco.
+- **Disponibilidade** do item não é gravada: ela é calculada pelos empréstimos em aberto.
+- Na **primeira execução** o banco é criado com os dados de exemplo. **Arquivo ▸ Nova biblioteca** apaga tudo do banco; **Arquivo ▸ Carregar dados de exemplo** recomeça com os exemplos; **Arquivo ▸ Ver banco de dados** mostra o conteúdo das tabelas.
+- No terminal: `python3 ver_banco.py` imprime as três tabelas. Para usar outro arquivo: `python3 app.py outro.db`.
+
+## Desk App II — menu completo
+
+Nesta etapa o sistema ganhou uma **barra de menu totalmente funcional**, que dá acesso a **todos os modelos** (Livro, Revista, DVD, Aluno, Professor, Carteirinha, Empréstimo e Exportadores) e a **todas as funcionalidades**. (No Desk App II os dados ficavam só em memória; o banco veio no Desk App III.)
 
 | Menu | Itens |
 |---|---|
-| **Arquivo** | Nova biblioteca (vazia) · Carregar dados de exemplo · Sair (`Ctrl+Q`) |
+| **Arquivo** | Nova biblioteca (vazia) · Carregar dados de exemplo · Ver banco de dados · Sair (`Ctrl+Q`) |
 | **Cadastros ▸ Acervo** | Novo Livro (`Ctrl+L`) · Nova Revista · Novo DVD · Editar item · Remover item |
 | **Cadastros ▸ Membros** | Novo Aluno (`Ctrl+M`) · Novo Professor · Editar membro · Remover membro · Renovar carteirinha |
 | **Movimentação** | Emprestar item (`Ctrl+E`) · Devolver item (`Ctrl+D`) |
@@ -39,7 +58,13 @@ cd sistema-biblioteca
 python3 app.py
 ```
 
-A janela abre com dados de exemplo (4 itens e 2 membros) para facilitar a demonstração.
+Na primeira vez é criado o banco `biblioteca.db` com dados de exemplo (4 itens e 2 membros). Das próximas vezes, o sistema abre com os dados que foram salvos.
+
+Para ver o banco pelo terminal:
+
+```bash
+python3 ver_banco.py
+```
 
 ## 🧪 Como rodar os testes
 
@@ -50,7 +75,7 @@ python3 -m pytest -v
 
 Em um Linux sem interface gráfica, use `xvfb-run -a python3 -m pytest -v` (sem display, os testes da interface são pulados automaticamente).
 
-**Resultado atual: 113 testes, 100% passando.**
+**Resultado atual: 128 testes, 100% passando.**
 
 | Arquivo de teste | O que verifica |
 |---|---|
@@ -59,7 +84,8 @@ Em um Linux sem interface gráfica, use `xvfb-run -a python3 -m pytest -v` (sem 
 | `test_funcionalidades.py` | Cadastros, buscas, remoções, pesquisa, empréstimos, limites, devoluções, multas, atrasados, carteirinha vencida, relatórios |
 | `test_interface.py` | A tela Tkinter: cadastros, erros, pesquisa, empréstimo/devolução com multa, filtro de atrasados, data inválida, relatórios |
 | `test_edicao.py` | (Desk App II) Edição de cada tipo de item e membro, validações sem alterar o objeto, renovação de carteirinha, histórico, resumo |
-| `test_menu.py` | (Desk App II) Aciona **todas** as entradas do menu e verifica que nenhuma quebra; cadastro/edição/remoção/empréstimo/devolução/consultas/relatórios pelos diálogos |
+| `test_banco.py` | (Desk App III) Grava, fecha e reabre o banco: cadastros de cada tipo, carteirinha, edição, empréstimo/devolução com multa, regras depois de reabrir, remoção sem perder histórico, erro que não grava, chave estrangeira |
+| `test_menu.py` | (Desk App II e III) Aciona **todas** as entradas do menu e verifica que nenhuma quebra; cadastro/edição/remoção/empréstimo/devolução/consultas/relatórios pelos diálogos |
 
 ## ✅ Funcionalidades
 
@@ -257,6 +283,34 @@ classDiagram
         +extensao() str
     }
 
+    %% ===================== BANCO DE DADOS (DESK APP III)
+    class BibliotecaPersistente {
+        -RepositorioSQLite _repo
+        +repositorio() RepositorioSQLite
+        +cadastrar_item(item) void
+        +editar_item(codigo, titulo, ano, extra) ItemAcervo
+        +remover_item(codigo) ItemAcervo
+        +cadastrar_membro(membro) void
+        +editar_membro(matricula, nome, cpf, extra) Membro
+        +renovar_carteirinha(matricula, emissao) Carteirinha
+        +remover_membro(matricula) Membro
+        +emprestar(codigo, matricula, data) Emprestimo
+        +devolver(codigo, data) float
+    }
+    class RepositorioSQLite {
+        +str caminho
+        -Connection _con
+        +salvar_item(item) void
+        +remover_item(codigo) void
+        +salvar_membro(membro) void
+        +remover_membro(matricula) void
+        +inserir_emprestimo(emprestimo) void
+        +atualizar_emprestimo(emprestimo) void
+        +carregar() tuple
+        +limpar() void
+        +descrever() str
+    }
+
     %% ===================== RELAÇÕES
     %% Herança
     ItemAcervo <|-- Livro
@@ -267,6 +321,7 @@ classDiagram
     Membro <|-- Professor
     Exportador <|-- ExportadorTexto
     Exportador <|-- ExportadorCSV
+    Biblioteca <|-- BibliotecaPersistente
 
     %% Composição
     Membro "1" *-- "1" Carteirinha : possui
@@ -283,6 +338,12 @@ classDiagram
     %% Dependência
     Emprestimo ..> CalculadoraMulta : usa
     Biblioteca ..> Exportador : usa
+
+    %% Banco de dados
+    BibliotecaPersistente "1" --> "1" RepositorioSQLite : grava em
+    RepositorioSQLite ..> ItemAcervo : converte
+    RepositorioSQLite ..> Membro : converte
+    RepositorioSQLite ..> Emprestimo : converte
 ```
 
 > Para regerar a imagem `docs/uml.png`:
@@ -297,6 +358,7 @@ classDiagram
 | **Composição** | `pessoas.py` → `Membro.__init__` cria `Carteirinha(self)` · `biblioteca.py` → `Biblioteca.emprestar()` cria o `Emprestimo` e o guarda em `_emprestimos` | `*--` |
 | **Agregação** | `biblioteca.py` → `Biblioteca._itens` e `Biblioteca._membros` recebem objetos criados fora (sobrevivem à remoção) | `o--` |
 | **Associação** | `emprestimo.py` → `Emprestimo._membro` e `Emprestimo._item` | `-->` |
+| **Herança + Associação (banco)** | `persistente.py` → `BibliotecaPersistente` herda de `Biblioteca` e guarda o `RepositorioSQLite` em `_repo` | `<\|--` e `-->` |
 | **Dependência** | `emprestimo.py` → `Emprestimo.devolver()` usa `CalculadoraMulta` · `biblioteca.py` → `gerar_relatorio(exportador)` recebe o `Exportador` por parâmetro | `..>` |
 
 Resumo das relações:
@@ -327,6 +389,8 @@ classDiagram
 sistema-biblioteca/
 ├── app.py                  # interface gráfica Tkinter com barra de menu (ponto de entrada)
 ├── dialogos.py             # janelas do menu: formulário, lista e texto
+├── ver_banco.py            # mostra as tabelas do banco no terminal
+├── biblioteca.db           # banco SQLite (criado ao abrir o app; fora do git)
 ├── biblioteca/
 │   ├── __init__.py         # exporta todas as classes
 │   ├── excecoes.py         # BibliotecaError e exceções filhas
@@ -335,7 +399,9 @@ sistema-biblioteca/
 │   ├── multa.py            # CalculadoraMulta
 │   ├── emprestimo.py       # Emprestimo
 │   ├── relatorio.py        # Exportador, ExportadorTexto, ExportadorCSV
-│   └── biblioteca.py       # Biblioteca (classe central)
+│   ├── biblioteca.py       # Biblioteca (classe central)
+│   ├── persistente.py      # BibliotecaPersistente (grava no banco)
+│   └── repositorio.py      # RepositorioSQLite (tabelas e SQL)
 ├── tests/
 │   ├── conftest.py
 │   ├── test_heranca_polimorfismo.py
@@ -343,7 +409,8 @@ sistema-biblioteca/
 │   ├── test_funcionalidades.py
 │   ├── test_interface.py
 │   ├── test_edicao.py
-│   └── test_menu.py
+│   ├── test_menu.py
+│   └── test_banco.py
 ├── docs/
 │   ├── uml.mmd             # diagrama de classes em Mermaid
 │   ├── uml.png             # diagrama completo renderizado
@@ -352,5 +419,6 @@ sistema-biblioteca/
 ├── README.md
 ├── ROTEIRO_VIDEO.md        # roteiro do vídeo do Desk App I (3 min)
 ├── ROTEIRO_VIDEO_II.md     # roteiro do vídeo do Desk App II (6 min)
+├── ROTEIRO_VIDEO_III.md    # roteiro do vídeo do Desk App III (6 min)
 └── requirements.txt
 ```

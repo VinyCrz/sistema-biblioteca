@@ -156,12 +156,15 @@ class Biblioteca:
         self._emprestimos.append(emprestimo)
         return emprestimo
 
-    def devolver(self, codigo, data=None) -> float:
+    def emprestimo_ativo_do_item(self, codigo):
         self.buscar_item(codigo)
         for emp in self._emprestimos:
             if emp.ativo and emp.item.codigo == codigo:
-                return emp.devolver(data)
+                return emp
         raise OperacaoInvalidaError(f"O item '{codigo}' não está emprestado.")
+
+    def devolver(self, codigo, data=None) -> float:
+        return self.emprestimo_ativo_do_item(codigo).devolver(data)
 
     # ---------- relatórios ----------
     def gerar_relatorio(self, exportador) -> str:

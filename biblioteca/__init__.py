@@ -12,11 +12,13 @@ from .excecoes import (
 )
 from .itens import DVD, ItemAcervo, Livro, Revista
 from .multa import CalculadoraMulta
+from .persistente import BibliotecaPersistente
 from .pessoas import Aluno, Carteirinha, Membro, Pessoa, Professor
 from .relatorio import Exportador, ExportadorCSV, ExportadorTexto
+from .repositorio import RepositorioSQLite
 
 __all__ = [
-    "Biblioteca", "Emprestimo",
+    "Biblioteca", "BibliotecaPersistente", "RepositorioSQLite", "Emprestimo",
     "BibliotecaError", "CadastroDuplicadoError", "ItemIndisponivelError",
     "LimiteEmprestimosError", "NaoEncontradoError", "OperacaoInvalidaError",
     "ItemAcervo", "Livro", "Revista", "DVD",

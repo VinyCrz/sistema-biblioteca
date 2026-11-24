@@ -245,3 +245,59 @@ def test_barra_de_status(app):
     app.bib.emprestar("L1", "A001")
     app.atualizar_tudo()
     assert "1 empréstimos ativos" in app.var_status.get()
+
+
+# ------------------------------------------------------------ Desk App III
+@pytest.fixture
+def app_banco(tmp_path):
+    try:
+        janela = App(caminho_banco=str(tmp_path / "app.db"))
+    except tk.TclError:
+        pytest.skip("Sem display disponível para o Tkinter")
+    janela.withdraw()
+    janela.erros, janela.infos = [], []
+    janela.mostrar_erro = janela.erros.append
+    janela.mostrar_info = janela.infos.append
+    janela.confirmar = lambda msg: True
+    yield janela
+    repo = janela.repo
+    try:
+        janela.destroy()
+    except tk.TclError:
+        pass  # já foi fechada (teste do Sair)
+    else:
+        repo.fechar()
+
+
+def test_app_com_banco_grava_e_reabre(app_banco, tmp_path):
+    from app import abrir_banco
+    assert len(app_banco.bib.itens) == 4        # primeira vez: dados de exemplo gravados
+    assert "banco de dados: app.db" in app_banco.var_status.get()
+    dlg = app_banco.abrir_novo_item("Livro")
+    for chave, valor in (("codigo", "L9"), ("titulo", "Vidas Secas"), ("ano", "1938"), ("extra", "Graciliano")):
+        dlg.definir(chave, valor)
+    assert dlg.confirmar()
+    reaberta = abrir_banco(str(tmp_path / "app.db"))
+    assert reaberta.buscar_item("L9").titulo == "Vidas Secas"
+    reaberta.repositorio.fechar()
+
+
+def test_app_nova_biblioteca_limpa_o_banco(app_banco):
+    assert app_banco.nova_biblioteca()
+    assert app_banco.repo.vazio()
+    assert app_banco.carregar_exemplo()
+    assert len(app_banco.bib.itens) == 4 and not app_banco.repo.vazio()
+
+
+def test_ver_banco_pelo_menu(app_banco, app):
+    janela = app_banco.ver_banco()
+    assert "TABELA EMPRESTIMOS" in janela.txt.get("1.0", "end")
+    assert app.ver_banco() is None and "só em memória" in app.erros[-1]
+
+
+def test_sair_fecha_o_banco(app_banco):
+    repo = app_banco.repo
+    assert app_banco.sair()
+    import sqlite3
+    with pytest.raises(sqlite3.ProgrammingError):
+        repo.consultar("SELECT 1")

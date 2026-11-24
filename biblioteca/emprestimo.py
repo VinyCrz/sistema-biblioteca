@@ -13,6 +13,7 @@ from .multa import CalculadoraMulta
 
 class Emprestimo:
     def __init__(self, membro, item, data_emprestimo=None):
+        self.id = None  # preenchido pelo banco de dados quando o empréstimo é salvo
         # ASSOCIAÇÃO: o empréstimo aponta para o membro e para o item
         self._membro = membro
         self._item = item
@@ -22,6 +23,23 @@ class Emprestimo:
         self._data_devolucao = None
         self._multa = 0.0
         item.marcar_emprestado()
+
+    @classmethod
+    def restaurar(cls, id, membro, item, data_emprestimo, data_prevista,
+                  data_devolucao=None, multa=0.0):
+        """Recria um empréstimo lido do banco de dados, sem refazer as regras.
+
+        Não chama o __init__ porque o empréstimo já aconteceu: só devolve
+        os valores gravados para o objeto.
+        """
+        emp = cls.__new__(cls)
+        emp.id = id
+        emp._membro, emp._item = membro, item
+        emp._data_emprestimo, emp._data_prevista = data_emprestimo, data_prevista
+        emp._data_devolucao, emp._multa = data_devolucao, multa
+        if emp.ativo:
+            item.marcar_emprestado()
+        return emp
 
     @property
     def membro(self):

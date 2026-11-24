@@ -149,6 +149,34 @@ classDiagram
         +extensao() str
     }
 
+    %% ===================== BANCO DE DADOS (DESK APP III)
+    class BibliotecaPersistente {
+        -RepositorioSQLite _repo
+        +repositorio() RepositorioSQLite
+        +cadastrar_item(item) void
+        +editar_item(codigo, titulo, ano, extra) ItemAcervo
+        +remover_item(codigo) ItemAcervo
+        +cadastrar_membro(membro) void
+        +editar_membro(matricula, nome, cpf, extra) Membro
+        +renovar_carteirinha(matricula, emissao) Carteirinha
+        +remover_membro(matricula) Membro
+        +emprestar(codigo, matricula, data) Emprestimo
+        +devolver(codigo, data) float
+    }
+    class RepositorioSQLite {
+        +str caminho
+        -Connection _con
+        +salvar_item(item) void
+        +remover_item(codigo) void
+        +salvar_membro(membro) void
+        +remover_membro(matricula) void
+        +inserir_emprestimo(emprestimo) void
+        +atualizar_emprestimo(emprestimo) void
+        +carregar() tuple
+        +limpar() void
+        +descrever() str
+    }
+
     %% ===================== RELAÇÕES
     %% Herança
     ItemAcervo <|-- Livro
@@ -159,6 +187,7 @@ classDiagram
     Membro <|-- Professor
     Exportador <|-- ExportadorTexto
     Exportador <|-- ExportadorCSV
+    Biblioteca <|-- BibliotecaPersistente
 
     %% Composição
     Membro "1" *-- "1" Carteirinha : possui
@@ -175,3 +204,9 @@ classDiagram
     %% Dependência
     Emprestimo ..> CalculadoraMulta : usa
     Biblioteca ..> Exportador : usa
+
+    %% Banco de dados
+    BibliotecaPersistente "1" --> "1" RepositorioSQLite : grava em
+    RepositorioSQLite ..> ItemAcervo : converte
+    RepositorioSQLite ..> Membro : converte
+    RepositorioSQLite ..> Emprestimo : converte
