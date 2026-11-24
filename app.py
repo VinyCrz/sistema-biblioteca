@@ -1,25 +1,29 @@
-"""Interface gráfica (Tkinter) do Sistema de Biblioteca - Desk App II.
+"""Interface gráfica (Tkinter) do Sistema de Biblioteca - Desk App III.
 
 A janela tem uma BARRA DE MENU que dá acesso a todos os modelos
 (Livro, Revista, DVD, Aluno, Professor, Carteirinha, Empréstimo e
-Exportadores) e a todas as funcionalidades. As abas continuam disponíveis
-como atalho visual. Os dados ficam só em memória (ainda sem banco de dados).
+Exportadores) e a todas as funcionalidades. Desde o Desk App III, todas as
+alterações são gravadas num banco de dados SQLite (arquivo biblioteca.db).
 
-Execute com:  python3 app.py
+Execute com:  python3 app.py               (usa biblioteca.db na pasta do projeto)
+         ou:  python3 app.py outro.db      (usa outro arquivo de banco)
 """
 
+import os
+import sys
 import tkinter as tk
 from datetime import date, datetime
 from tkinter import filedialog, messagebox, ttk
 
 from biblioteca import (
-    DVD, Aluno, Biblioteca, BibliotecaError, ExportadorCSV, ExportadorTexto,
-    Livro, Professor, Revista,
+    DVD, Aluno, Biblioteca, BibliotecaError, BibliotecaPersistente, ExportadorCSV,
+    ExportadorTexto, Livro, Professor, RepositorioSQLite, Revista,
 )
 from dialogos import FormularioDialog, JanelaLista, JanelaTexto
 
 FMT_DATA = "%d/%m/%Y"
-NOME_BIBLIOTECA = "Biblioteca Desk App II"
+NOME_BIBLIOTECA = "Biblioteca Desk App III"
+BANCO_PADRAO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "biblioteca.db")
 
 
 def ler_data(texto):
@@ -33,15 +37,24 @@ def ler_data(texto):
         raise BibliotecaError("Data inválida. Use o formato dd/mm/aaaa.") from None
 
 
-def dados_exemplo():
-    """Biblioteca já preenchida para a demonstração."""
-    bib = Biblioteca(NOME_BIBLIOTECA)
+def dados_exemplo(bib=None):
+    """Preenche a biblioteca com os dados da demonstração (cria uma em memória se não vier)."""
+    bib = bib if bib is not None else Biblioteca(NOME_BIBLIOTECA)
     bib.cadastrar_item(Livro("L1", "Dom Casmurro", 1899, "Machado de Assis"))
     bib.cadastrar_item(Livro("L2", "Clean Code", 2008, "Robert C. Martin"))
     bib.cadastrar_item(Revista("R1", "Superinteressante", 2024, 450))
     bib.cadastrar_item(DVD("D1", "Cidade de Deus", 2002, 130))
     bib.cadastrar_membro(Aluno("Ana Souza", "123.456.789-00", "A001", "Sistemas de Informação"))
     bib.cadastrar_membro(Professor("Carlos Lima", "987.654.321-00", "P001", "Computação"))
+    return bib
+
+
+def abrir_banco(caminho=BANCO_PADRAO):
+    """Abre (ou cria) o banco. Na primeira vez, grava os dados de exemplo."""
+    repo = RepositorioSQLite(caminho)
+    bib = BibliotecaPersistente(NOME_BIBLIOTECA, repo)
+    if repo.vazio():
+        dados_exemplo(bib)
     return bib
 
 
@@ -102,12 +115,13 @@ Nas janelas: Enter confirma e Esc fecha.
 TEXTO_SOBRE = """SISTEMA DE BIBLIOTECA
 
 Projeto acadêmico de Programação Orientada a Objetos
-Disciplina: Desk App II
+Disciplinas: Desk App I, II e III
 Autor: Vinicius
 
-Python 3 + Tkinter. Nesta etapa os dados ficam apenas em memória:
-ao fechar o programa eles são perdidos (o banco de dados entra
-na próxima etapa).
+Python 3 + Tkinter + SQLite. Desde o Desk App III, cada cadastro,
+edição, remoção, empréstimo e devolução é gravado na hora no banco
+de dados (arquivo biblioteca.db). Ao abrir o programa de novo,
+tudo volta como estava.
 
 Relações demonstradas: Herança, Polimorfismo, Composição,
 Agregação, Associação e Dependência.
@@ -115,9 +129,9 @@ Agregação, Associação e Dependência.
 
 
 class App(tk.Tk):
-    def __init__(self, biblioteca=None):
+    def __init__(self, biblioteca=None, caminho_banco=BANCO_PADRAO):
         super().__init__()
-        self.bib = biblioteca if biblioteca is not None else dados_exemplo()
+        self.bib = biblioteca if biblioteca is not None else abrir_banco(caminho_banco)
         self.geometry("1150x640")
         self.ultima_janela = None  # última janela aberta pelo menu (usada nos testes)
 
@@ -133,6 +147,7 @@ class App(tk.Tk):
         ttk.Label(self, textvariable=self.var_status, relief="sunken",
                   anchor="w", padding=(6, 2)).pack(fill="x", side="bottom")
         self._criar_atalhos()
+        self.protocol("WM_DELETE_WINDOW", self.sair)
         self.atualizar_tudo()
 
     # ================================================================ MENU
@@ -150,6 +165,8 @@ class App(tk.Tk):
         m = novo_menu("Arquivo")
         m.add_command(label="Nova biblioteca (vazia)", command=self.nova_biblioteca)
         m.add_command(label="Carregar dados de exemplo", command=self.carregar_exemplo)
+        m.add_separator()
+        m.add_command(label="Ver banco de dados", command=self.ver_banco)
         m.add_separator()
         m.add_command(label="Sair", accelerator="Ctrl+Q", command=self.sair)
 
@@ -352,25 +369,45 @@ class App(tk.Tk):
                        (300, 260, 110, 110, 110, 150))
 
     # ============================================================ ARQUIVO
+    @property
+    def repo(self):
+        """Repositório do banco, ou None quando a biblioteca está só em memória."""
+        return getattr(self.bib, "repositorio", None)
+
+    def _biblioteca_vazia(self):
+        if self.repo is None:
+            return Biblioteca(NOME_BIBLIOTECA)
+        self.repo.limpar()
+        return BibliotecaPersistente(NOME_BIBLIOTECA, self.repo)
+
     def nova_biblioteca(self):
-        if not self.confirmar("Apagar todos os dados da memória e começar uma biblioteca vazia?"):
+        if not self.confirmar("Apagar TODOS os dados e começar uma biblioteca vazia?"):
             return False
-        self.bib = Biblioteca(NOME_BIBLIOTECA)
+        self.bib = self._biblioteca_vazia()
         self.atualizar_tudo()
         return True
 
     def carregar_exemplo(self):
-        if not self.confirmar("Substituir os dados atuais pelos dados de exemplo?"):
+        if not self.confirmar("Apagar os dados atuais e carregar os dados de exemplo?"):
             return False
-        self.bib = dados_exemplo()
+        self.bib = dados_exemplo(self._biblioteca_vazia())
         self.atualizar_tudo()
         return True
 
+    def ver_banco(self):
+        if self.repo is None:
+            self.mostrar_erro("Esta biblioteca está só em memória, sem banco de dados.")
+            return None
+        return self._texto("Banco de dados", self.repo.descrever())
+
     def sair(self):
-        if self.confirmar("Deseja sair? Os dados estão só em memória e serão perdidos."):
-            self.destroy()
-            return True
-        return False
+        if not self.confirmar("Deseja sair do sistema?"):
+            return False
+        repo = self.repo
+        self.destroy()
+        if repo is not None:
+            repo.fechar()  # os dados já foram gravados a cada operação
+        return True
 
     # ============================================================ ACERVO (aba)
     def _criar_aba_acervo(self):
@@ -884,8 +921,13 @@ class App(tk.Tk):
         self.var_status.set(
             f"{r['itens']} itens ({r['disponiveis']} disponíveis)  |  {r['membros']} membros  |  "
             f"{r['ativos']} empréstimos ativos  |  {r['atrasados']} atrasados  |  "
-            f"multas: R$ {r['multas']:.2f}  |  dados em memória"
+            f"multas: R$ {r['multas']:.2f}  |  {self._origem_dados()}"
         )
+
+    def _origem_dados(self):
+        if self.repo is None:
+            return "dados em memória"
+        return f"banco de dados: {os.path.basename(self.repo.caminho)}"
 
     def atualizar_tudo(self):
         self.title(f"Sistema de Biblioteca - {self.bib.nome}")
@@ -896,4 +938,4 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
-    App().mainloop()
+    App(caminho_banco=sys.argv[1] if len(sys.argv) > 1 else BANCO_PADRAO).mainloop()
